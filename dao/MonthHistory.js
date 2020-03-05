@@ -7,6 +7,8 @@ var monthHistorySchema = new Schema({
   name: String,
   date: String,
   data: Object
+}, {
+  versionKey: false // set to false then it wont create in mongodb
 });
 
 var monthHistory = mongoose.model("month_history", monthHistorySchema);
@@ -25,9 +27,9 @@ module.exports = {
       }
     );
   },
-  upsert: function(modelDate, monthHistoryModel) {
+  upsert: function(id, monthHistoryModel) {
     monthHistory.updateOne(
-      { date: modelDate },
+      { _id: id },
       monthHistoryModel,
       { upsert: true, setDefaultsOnInsert: true }, // options
       function(err, rawResponse) {
