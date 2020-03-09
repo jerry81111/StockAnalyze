@@ -32,4 +32,4 @@ function getRequest(url) {
   });
 }
 
-notifyMsg("白哥要陸化囉 打尛簡體字");
+notifyMsg("阿祥用TG講");
