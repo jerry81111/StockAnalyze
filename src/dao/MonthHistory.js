@@ -40,5 +40,10 @@ module.exports = {
       }
     );
   },
+  findDistinctNo:function(callback){
+    monthHistory.find().distinct('code', function(err, docs) {
+      callback(err, docs);
+    })
+  },
   model: monthHistory
 };

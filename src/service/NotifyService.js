@@ -5,19 +5,12 @@ const token = "980385678:AAGLtvuYgjmKYB0pNSJ_3Cam80b6vrPaSbQ";
 const chatId = -1001486015796;
 
 function notifyMsg(msg) {
-  var url =
-    "https://api.telegram.org/bot" +
-    token +
-    "/sendMessage?chat_id=" +
-    chatId +
-    "&text=" +
-    encodeURI(msg);
-  console.log(url);
+  var url = "https://api.telegram.org/bot" + token + "/sendMessage?chat_id=" + chatId + "&text=" + encodeURI(msg);
+  console.log("Notify "+msg);
 
-  getRequest(url)
-    .catch(function(error) {
-      console.log(error);
-    });
+  getRequest(url).catch(function(error) {
+    console.log(error);
+  });
 }
 
 function getRequest(url) {
@@ -32,4 +25,8 @@ function getRequest(url) {
   });
 }
 
-notifyMsg("阿祥用TG講");
+module.exports = {
+  notifyMsg: function (msg)  {
+    notifyMsg(msg);
+  }
+};

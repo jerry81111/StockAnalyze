@@ -7,12 +7,13 @@ var month;
 var today = new Date();
 const dateNow = today.getFullYear() + pad(today.getMonth() + 1);
 const slash = "/";
-const delayTime = 5 * 1000; 
-
+const delayTime = 5 * 1000;
+const pastYear = 10;
 
 function findNewestData(stockNo) {
   return new Promise(resolve => {
     monthHistory.findLastDate(stockNo, function(err, doc) {
+      if (err) return reject(err);
       resolve(doc);
     });
   });
@@ -22,14 +23,14 @@ function pad(num) {
 }
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-async function downloadMonthHistory (input) {
+async function downloadMonthHistory(input) {
   let stockNoArr = input.split(",");
   for (let i = 0; i < stockNoArr.length; i++) {
     await analyzeStartDate(stockNoArr[i]);
   }
 }
 
-async function analyzeStartDate (stockNo) {
+async function analyzeStartDate(stockNo) {
   const newestData = await findNewestData(stockNo);
 
   if (newestData.length != 0) {
@@ -38,7 +39,7 @@ async function analyzeStartDate (stockNo) {
   } else {
     year = today.getFullYear();
     month = today.getMonth() + 1;
-    year = year - 1;
+    year = year - pastYear;
   }
 
   await loop(stockNo).catch(err => {
@@ -48,27 +49,21 @@ async function analyzeStartDate (stockNo) {
 
 async function loop(stockNo) {
   while (parseInt(year + pad(month)) <= parseInt(dateNow)) {
-    
-    var url =
-    "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=" +
-    year +
-    pad(month) +
-    "01&stockNo=" +
-    stockNo;
+    var url = "https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=" + year + pad(month) + "01&stockNo=" + stockNo;
 
     /* console.log(url) */
     got(url)
-    .then(response => {
-      console.log("Execute "+url);
-      if(JSON.parse(response.body)["stat"]!="OK"){
-        console.error("Api Response Error");
-        return;
-      }
-      upsert(stockNo, response.body);
-    })
-    .catch(err => {
-      console.log(err);
-    });
+      .then(response => {
+        console.log("Execute " + url);
+        if (JSON.parse(response.body)["stat"] != "OK") {
+          console.error("Api Response Error");
+          return;
+        }
+        upsert(stockNo, response.body);
+      })
+      .catch(err => {
+        console.log(err);
+      });
 
     await delay(delayTime);
     month++;
@@ -77,7 +72,7 @@ async function loop(stockNo) {
       month = 1;
     }
   }
-  console.log("Break StockNo : "+stockNo);
+  console.log("Break StockNo : " + stockNo);
 }
 
 function upsert(stockNo, body) {
@@ -95,7 +90,44 @@ function upsert(stockNo, body) {
   monthHistory.upsert(id, monthHistoryModel);
 }
 
-module.exports = async function () { 
-  let input = await fileService.readFile("./MonthHistory.txt");
-  await downloadMonthHistory(input);
+//analyzeLowestPrice
+async function analyzeLowestPrice(stockNo) {
+  return new Promise((resolve, reject) => {
+    monthHistory.findByCode(stockNo, function(err, docs) {
+      if (err) return reject(err);
+      resolve(getLowestPrice(docs));
+    });
+  });
+}
+function getLowestPrice(docs) {
+  let lowestPriceArr = [];
+  docs.forEach(doc =>
+    doc.data.forEach(data => {
+      lowestPriceArr.push(parseFloat(data[6]));
+    })
+  );
+  return Math.min(...lowestPriceArr);
+}
+
+//findDistinctNo
+function findDistinctNo() {
+  return new Promise(resolve => {
+    monthHistory.findDistinctNo(function(err, doc) {
+      if (err) return reject(err);
+      resolve(doc);
+    });
+  });
+}
+//module export
+module.exports = {
+  downloadMonthHistory: async function() {
+    let input = await fileService.readFile("./MonthHistory.txt");
+    await downloadMonthHistory(input);
+  },
+  analyzeLowestPrice: async function(stockNo) {
+    return await analyzeLowestPrice(stockNo);
+  },
+  findDistinctNo: async function() {
+    return await findDistinctNo();
+  }
 };
